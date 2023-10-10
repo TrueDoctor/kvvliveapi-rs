@@ -5,6 +5,7 @@ authors = ["Clemens Wallrath <dev@nervengiftlabs.de>"]
 description = "Rust bindings for the Karlsruher Verkehrsverbund live data API"
 repository = "https://github.com/nervengift/kvvliveapi-rs"
 license = "WTFPL"
+edition = "2021"
 
 [dependencies]
 serde = "1.0"

@@ -143,31 +143,34 @@ pub struct Departures {
     pub departures: Vec<Departure>,
 }
 
-fn query<T: DeserializeOwned>(path: &str, params: Vec<(&str, &str)>) -> Result<T, reqwest::Error> {
+async fn query<T: DeserializeOwned>(
+    path: &str,
+    params: Vec<(&str, &str)>,
+) -> Result<T, reqwest::Error> {
     let mut params = params.clone();
     params.push(("key", API_KEY));
 
     let url = Url::parse_with_params(&format!("{}{}", API_BASE, path), params).unwrap();
-    reqwest::blocking::get(url)?.json()
+    reqwest::get(url).await?.json().await
 }
 
-fn search(path: &str) -> Result<Vec<Stop>, reqwest::Error> {
-    query::<SearchAnswer>(path, vec![]).map(|s| s.stops)
+async fn search(path: &str) -> Result<Vec<Stop>, reqwest::Error> {
+    query::<SearchAnswer>(path, vec![]).await.map(|s| s.stops)
 }
 
 /// Search stops by their name
-pub fn search_by_name(name: &str) -> Result<Vec<Stop>, reqwest::Error> {
-    search(&format!("stops/byname/{}", name))
+pub async fn search_by_name(name: &str) -> Result<Vec<Stop>, reqwest::Error> {
+    search(&format!("stops/byname/{}", name)).await
 }
 
 /// Search stops in the vicinity of a position given as latitude and longitude
-pub fn search_by_latlon(lat: f64, lon: f64) -> Result<Vec<Stop>, reqwest::Error> {
-    search(&format!("stops/bylatlon/{}/{}", lat, lon))
+pub async fn search_by_latlon(lat: f64, lon: f64) -> Result<Vec<Stop>, reqwest::Error> {
+    search(&format!("stops/bylatlon/{}/{}", lat, lon)).await
 }
 
 /// Get a stop by its id. Returns None if the given stop id does not exist.
-pub fn search_by_stop_id(stop_id: &str) -> Result<Option<Stop>, reqwest::Error> {
-    match query(&format!("stops/bystop/{}", stop_id), vec![]) {
+pub async fn search_by_stop_id(stop_id: &str) -> Result<Option<Stop>, reqwest::Error> {
+    match query(&format!("stops/bystop/{}", stop_id), vec![]).await {
         Ok(s) => Ok(Some(s)),
         Err(e) => {
             match e.status() {
@@ -178,35 +181,35 @@ pub fn search_by_stop_id(stop_id: &str) -> Result<Option<Stop>, reqwest::Error> 
     }
 }
 
-fn departures(path: &str) -> Result<Departures, reqwest::Error> {
-    query::<Departures>(path, vec![])
+async fn departures(path: &str) -> Result<Departures, reqwest::Error> {
+    query::<Departures>(path, vec![]).await
 }
 
-fn departures_with_max(path: &str, max_info: u32) -> Result<Departures, reqwest::Error> {
-    query::<Departures>(path, vec![("maxInfos", &max_info.to_string())])
+async fn departures_with_max(path: &str, max_info: u32) -> Result<Departures, reqwest::Error> {
+    query::<Departures>(path, vec![("maxInfos", &max_info.to_string())]).await
 }
 
 /// Get next departures for a stop up to a maximum of max_info entries (may be less)
 ///
 /// Note that the API does not seem to yield more than 10 results with max_info specified,
 /// but may yield more results without it
-pub fn departures_by_stop_with_max(
+pub async fn departures_by_stop_with_max(
     stop_id: &str,
     max_info: u32,
 ) -> Result<Departures, reqwest::Error> {
-    departures_with_max(&format!("departures/bystop/{}", stop_id), max_info)
+    departures_with_max(&format!("departures/bystop/{}", stop_id), max_info).await
 }
 
 /// Get next departures for a stop
-pub fn departures_by_stop(stop_id: &str) -> Result<Departures, reqwest::Error> {
-    departures(&format!("departures/bystop/{}", stop_id))
+pub async fn departures_by_stop(stop_id: &str) -> Result<Departures, reqwest::Error> {
+    departures(&format!("departures/bystop/{}", stop_id)).await
 }
 
 /// Get next departures for a given stop and route up to a maximum of max_info entries (may be less)
 ///
 /// Note that the API does not seem to yield more than 10 results with max_info specified,
 /// but may yield more results without it
-pub fn departures_by_route_with_max(
+pub async fn departures_by_route_with_max(
     stop_id: &str,
     route: &str,
     max_info: u32,
@@ -215,11 +218,12 @@ pub fn departures_by_route_with_max(
         &format!("departures/byroute/{}/{}", route, stop_id),
         max_info,
     )
+    .await
 }
 
 /// Get next departures for a given stop and route (up to 10)
-pub fn departures_by_route(stop_id: &str, route: &str) -> Result<Departures, reqwest::Error> {
-    departures(&format!("departures/byroute/{}/{}", route, stop_id))
+pub async fn departures_by_route(stop_id: &str, route: &str) -> Result<Departures, reqwest::Error> {
+    departures(&format!("departures/byroute/{}/{}", route, stop_id)).await
 }
 
 #[cfg(test)]
